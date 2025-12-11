@@ -591,19 +591,19 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     n_float = tofloat2(n)
     t = correct(base)
     n_corr = correct(n)
+    if lte(n_corr, 1): return pow(base, n)
     if gt(q, 20):
         if base_float == None or n_float == None:
             return maximum(maximum(t, n_corr), arrow(10, q, 10))
     if gt(maximum(n_corr, t), [0, 16, 1] + [0] * 17 + [1]): return maximum(n_corr, t)
-    if gte(q, MAX_SAFE_INT):
+    if gt(q, MAX_SAFE_INT):
         return [q[0], q[1], q[2]+1]
     if lt(q, [0, 0]): raise ValueError("n must be >= 0")
-    arro = 70
+    arro = 100
     if lt(base, 3.1): base = 3.1
     if lt(base, 4): arro = 295
     elif lt(base, 5): arro = 132
     elif lt(base, 7): arro = 100
-    elif lt(base, 10): arro = 80
     if gt(q, arro):
         r = tofloat2(q)
         result = [0, 0, 0]
