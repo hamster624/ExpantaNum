@@ -709,6 +709,7 @@ def format(num, decimals=decimals, small=False):
             n_val += 1
         return "H" + format(n_val, decimals)
     elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + format(num_correct[:2] + [0])
+    elif num_correct[2] >= MAX_SAFE_INT: return "K" + format(num_correct[2])
     elif num_correct[2] != 0 and num_correct[2] >= 4:
         pol = polarize(n, True)
         if lt(n, [0, 10000000000, 8]): return format(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "K" + comma_format(num_correct[2]+1)
@@ -922,6 +923,7 @@ def suffix(num, small=False):
             n_val += 1
         return "H" + suffix(n_val, decimals)
     elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + suffix(num_correct[:2] + [0])
+    elif num_correct[2] >= MAX_SAFE_INT: return "K" + format(num_correct[2])
     elif num_correct[2] != 0 and num_correct[2] >= 4:
         pol = polarize(n, True)
         if lt(n, [0, 10000000000, 8]): return suffix(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "K" + suffix(num_correct[2]+1)
