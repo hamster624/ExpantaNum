@@ -488,7 +488,9 @@ def tetration(a, r, do=False):
         if eq(r, [[1, 1], 0, 0]): raise ValueError("1^^(-1) is undefined")
         return [[0, 1], 0, 0]
     if gt(r,[0,1,1,MAX_SAFE_INT]) or gt(a,[0, 1,1,1,MAX_SAFE_INT]): return maximum(a,r)
-    if gte(r,MAX_SAFE_INT) and lte(r,[0, 1,MAX_SAFE_INT]): return correct(add(slog(a)[0], r)[0] + [1])
+    if gte(r,MAX_SAFE_INT) and lte(r,[0, 1,MAX_SAFE_INT]):
+        if do == True: return add(slog(a)[0], r)[0] + [1]
+        return correct(add(slog(a)[0], r)[0] + [1])
     if gt(r,[0, 1,MAX_SAFE_INT]) or gt(a,[0, 1,1,MAX_SAFE_INT]):
         q = r[:3] + [(r[3] + 1)]
         return maximum(q,a)
