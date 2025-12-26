@@ -25,6 +25,7 @@ LOG5E = 0.6213349345596118
 _log10 = math.log10
 precise_arrow = False # Would not recommend turning this to True
 arrow_precision = 44 # Would nto recommend changing this
+grahams_number = [[0, 3638334640023.7783, 7625597484984, 0, 1], 0, 63] # This variable is unused and is only here just to show how much the grahams number is
 def correct(x):
     if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
 
@@ -119,8 +120,7 @@ def _to_pair_array(arr):
 def polarize(array, smallTop=False, base=10):
     array = correct(array)[0]
     pairs = _to_pair_array(array)
-    if len(pairs) == 0:
-        pairs = [[0, 0]]
+    if len(pairs) == 0: pairs = [[0, 0]]
 
     bottom = pairs[0][1] if pairs[0][0] == 0 else 10
     top = 0
@@ -373,9 +373,11 @@ def add(a, b):
     if a[0] == 1 and b[0] == 1: return neg(add(neg(a),neg(b)))
     if a[0] == 1 and b[0] == 0: return subtract(b, neg(a))
     if a[0] == 0 and b[0] == 1: return subtract(a, neg(b))
-    if len(a) == 3 or len(b) == 3:
-        if (len(a) > 2 and a[2] > 1) or (len(b) > 2 and b[2] > 1): return maximum(a, b)
-    if len(a) == 2 and len(b) == 2: return correct([0, tofloat(a) + tofloat(b)])
+    len_a = len(a)
+    len_b = len(b)
+    if len_a == 3 or len_b == 3:
+        if (len_a > 2 and a[2] > 1) or (len_b > 2 and b[2] > 1): return maximum(a, b)
+    if len_a == 2 and len_b == 2: return correct([0, tofloat(a) + tofloat(b)])
     loga = tofloat(log(maximum(a,[[0,1], 0, 0])))
     logb = tofloat(log(b))
     M = max(loga, logb)
@@ -416,13 +418,11 @@ def multiply(a, b):
 def divide(a, b):
     a = correct(a)
     b = correct(b)
-    if a[1] != 0 or a[2] != 0: return maximum(a,b)
-    if b[1] != 0 or b[2] != 0: return maximum(a,b)
+    if eq(b, [[0, 0], 0, 0]): raise ZeroDivisionError("Can't divide with 0")
+    if gt(maximum(a,b), [[0, MAX_SAFE_INT, 2], 0, 0]): return a if gt(a,b) else 0
     a = a[0]
     b = b[0]
     if a[0] ^ b[0] == 1: return neg(divide(abs_val(a), abs_val(b)))
-    if eq(b, [[0, 0], 0, 0]): raise ZeroDivisionError("Can't divide with 0")
-    if gt(maximum(a,b), [0, MAX_SAFE_INT, 2]): return a if gt(a,b) else 0
     if len(b) == 2 and len(a) == 2: return correct([0, tofloat(a) / tofloat(b)])
     if eq(log(a), [[0, 0], 0, 0]): return addlayer(subtract(a, log(b)), _add=1)
     result = subtract(log(a), log(b))
@@ -446,9 +446,9 @@ def factorial(n):
     n = n[0]
     if n[0] == 1: raise ValueError("Can't factorial a negative")
     if lte(n, [[0, 170], 0, 0]): return correct(str(math.gamma(n[1] + 1)).strip("+"))
-    term1 = multiply(add(n, 0.5), log(n))
-    term2 = neg(multiply(n, 0.4342944819032518))
-    total_log = add(add(term1, term2), 0.3990899341790575)
+    term1 = multiply(add(n, [[0.5], 0, 0]), log(n))
+    term2 = neg(multiply(n, [[0.4342944819032518], 0, 0]))
+    total_log = add(add(term1, term2), [[0.3990899341790575], 0, 0])
     return addlayer(total_log)
 
 def floor(x):
@@ -524,9 +524,11 @@ def tetration(a, r, do=False):
             end = x1**end
             y_floor -= 1
             skip += 1
-    except OverflowError: end *= math.log10(x1)
-    if do == True: return correct([0, end, y_floor])[0]
-    return correct([0, end, y_floor])
+    except OverflowError:
+        end = power(x1, end)
+        end = power(x1, end)[1]
+    if do == True: return correct([0, end, y_floor + 3])[0]
+    return correct([0, end, y_floor + 3])
 def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
     r = tofloat2(r)
     t = correct(t)
@@ -597,14 +599,14 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     n_float = tofloat2(n)
     t = correct(base)
     n_corr = correct(n)
-    if lte(n_corr, 1): return pow(base, n)
-    if gt(q, 20):
+    if lte(n_corr, [[0, 1], 0, 0]): return pow(base, n)
+    if gt(q, [[0, 20], 0, 0]):
         if base_float == None or n_float == None:
             return maximum(maximum(t, n_corr), arrow(10, q, 10))
     if gt(maximum(n_corr, t), [0, 16, 1] + [0] * 17 + [1]): return maximum(n_corr, t)
     if gt(q, MAX_SAFE_INT):
         return [q[0], q[1], q[2]+1]
-    if lt(q, [0, 0]): raise ValueError("n must be >= 0")
+    if lt(q, [[0, 0], 0, 0]): raise ValueError("n must be >= 0")
     arro = 100
     if lt(base, 3.1): base = 3.1
     if lt(base, 4): arro = 295
@@ -964,17 +966,12 @@ def from_hyper_e(x):
     if len(nums) > 3: nums[2:] = [v - 1 for v in nums[2:]]
     return correct([sign] + nums)
 def count_repeating(s, target=None):
-    if not s:
-        return 0
-    if target is None:
-        target = s[0]
-    
+    if not s: return 0
+    if target is None: target = s[0]
     count = 0
     for ch in s:
-        if ch == target:
-            count += 1
-        else:
-            break
+        if ch == target: count += 1
+        else: break
     return count
 # Sniffed breaking bad money making stuff a bit too much to code and in the result got this code. Oh and spent ~3h for this trash
 def fromstring(x, done=False):
@@ -1048,6 +1045,37 @@ def fromstring(x, done=False):
     logic(x)
     if array[1] == 0: array[1] = 10000000000
     return correct(array)
+def arrow_format(x):
+    x = correct(x)
+    x0 = x[0]
+    if x[2] != 0:
+        if x[2] > MAX_SAFE_INT: return "10{{1}}" + str(float(x[2]))
+        if x[2] < 4: return "10{10}" * x[2] + arrow_format(x[:2] + [0])
+        x0 = x[0]
+        pol = polarize(x0, True)
+        if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[2]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
+        if lt(x0, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return "10{{2}}" + comma_format(x[2]+1+_log10(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E))
+        else:
+            if x[1] == 0: x[1] = len(x0)-1
+            nextToTopJ = x[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
+            if nextToTopJ >= 1e10: bottom = _log10(_log10(nextToTopJ))
+            else: bottom = _log10(nextToTopJ)
+            if nextToTopJ >= 1e10: top = 2
+            else: top = 1
+        return "10{{1}}" + comma_format(x[2]+2 + _log10(1+_log10(_log10(bottom)+top)))
+    if x[1] != 0:
+        pol = polarize(x0, True)
+        val = _log10(pol['bottom']) + pol['top']
+        j = x[1]
+        if j > 1e9: j = comma_format(j, 6)
+        else: j = comma_format(j)
+        return "10{" + str(j) + "}" + comma_format(val)
+    else:
+        if lt(x0, 1e9): return format(x0)
+        pol = polarize(x0)
+        arrow = pol['height']+1
+        if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
+        return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
 def pentation(a,b): return arrow(a,3,b)
 def hexation(a,b): return arrow(a,4,b)
 def heptation(a,b): return arrow(a,5,b)
