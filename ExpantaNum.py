@@ -1048,13 +1048,12 @@ def fromstring(x, done=False):
 def arrow_format(x):
     x = correct(x)
     x0 = x[0]
-    if x[2] != 0:
-        if x[2] > MAX_SAFE_INT: return "10{{1}}" + str(float(x[2]))
-        if x[2] < 4: return "10{10}" * x[2] + arrow_format(x[:2] + [0])
-        x0 = x[0]
+    if x[3] != 0:
+        if x[3] > MAX_SAFE_INT: return "10{{2}}" + str(float(x[3]))
+        if x[3] < 4: return "10{{1}}" * x[3] + arrow_format(x[:3] + [0])
         pol = polarize(x0, True)
-        if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[2]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
-        if lt(x0, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return "10{{2}}" + comma_format(x[2]+1+_log10(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E))
+        if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[3]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
+        if lt(x0, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return "10{{2}}" + comma_format(x[3]+1+_log10(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E), 16)
         else:
             if x[1] == 0: x[1] = len(x0)-1
             nextToTopJ = x[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
@@ -1062,14 +1061,28 @@ def arrow_format(x):
             else: bottom = _log10(nextToTopJ)
             if nextToTopJ >= 1e10: top = 2
             else: top = 1
-        return "10{{1}}" + comma_format(x[2]+2 + _log10(1+_log10(_log10(bottom)+top)))
+        return "10{{2}}" + comma_format(x[3]+2 + _log10(1+_log10(_log10(bottom)+top)), 16)
+    if x[2] != 0:
+        if x[2] > MAX_SAFE_INT: return "10{{1}}" + str(float(x[2]))
+        if x[2] < 4: return "10{10}" * x[2] + arrow_format(x[:2] + [0])
+        pol = polarize(x0, True)
+        if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[2]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
+        if lt(x0, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return "10{{2}}" + comma_format(x[2]+1+_log10(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E), 16)
+        else:
+            if x[1] == 0: x[1] = len(x0)-1
+            nextToTopJ = x[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
+            if nextToTopJ >= 1e10: bottom = _log10(_log10(nextToTopJ))
+            else: bottom = _log10(nextToTopJ)
+            if nextToTopJ >= 1e10: top = 2
+            else: top = 1
+        return "10{{1}}" + comma_format(x[2]+2 + _log10(1+_log10(_log10(bottom)+top)), 16)
     if x[1] != 0:
         pol = polarize(x0, True)
         val = _log10(pol['bottom']) + pol['top']
         j = x[1]
         if j > 1e9: j = comma_format(j, 6)
         else: j = comma_format(j)
-        return "10{" + str(j) + "}" + comma_format(val)
+        return "10{" + str(j) + "}" + comma_format(val, 16)
     else:
         if lt(x0, 1e9): return format(x0)
         pol = polarize(x0)
