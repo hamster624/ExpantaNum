@@ -30,7 +30,7 @@ def correct(x):
     if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
 
     if isinstance(x, str):
-        try: x =correct(float(x))
+        try: return correct(float(x))
         except: pass
         s = x.strip()
         s = s.replace("1e", "e")
@@ -745,7 +745,7 @@ def hyper_e(x):
     arr = correct(x)
     sign = "-" if arr[0][0] == 1 else ""
     if arr[2] != 0: raise NotImplementedError("Hyper-e not implemented for numbers above 10{9007199254740991}10")
-    if arr[1] != 0: return sign + "E10000000000" + "#" + str(arr[0][-1]) + "##" + str(arr[1])
+    if arr[1] != 0: return sign + "E10000000000" + "#" + str(arr[0][-1]) + "##" + str(arr[1]-1)
     arr = arr[0]
     sign = "-" if arr[0] == 1 else ""
     if len(arr) > 3:
