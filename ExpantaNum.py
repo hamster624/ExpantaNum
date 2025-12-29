@@ -20,7 +20,7 @@ MultOnes = [
 ]
 #--End of editable things--
 MAX_SAFE_INT = 2**53 - 1
-MAX_LOGP1_REPEATS = 48
+MAX_LOGP1_REPEATS = 480
 LOG5E = 0.6213349345596118
 _log10 = math.log10
 precise_arrow = False # Would not recommend turning this to True
@@ -30,7 +30,7 @@ def correct(x):
     if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
 
     if isinstance(x, str):
-        try: return correct(float(x))
+        try: x =correct(float(x))
         except: pass
         s = x.strip()
         s = s.replace("1e", "e")
@@ -106,36 +106,22 @@ def correct(x):
         if x[2] != 0 and len(arr) == 2: raise ValueError("If layer is more than 0 and array is less than 2^53-1 its undefined")
         return [arr] + x[1:]
     raise TypeError("Unsupported type for correct")
-
-def _to_pair_array(arr):
-    if not arr: return [[0, 0]]
-    if isinstance(arr[0], (list, tuple)) and len(arr[0]) == 2: return [[int(h), float(v)] for h, v in arr]
-    if not isinstance(arr, (list, tuple)): raise TypeError("polarize: unsupported array type")
-    if len(arr) == 1: return [[0, float(arr[0])]]
-    base_val = float(arr[1])
-    pairs = [[0, base_val]]
-    for i in range(2, len(arr)): pairs.append([i-1, float(arr[i])])
-    return pairs
-
-def polarize(array, smallTop=False, base=10):
-    array = correct(array)[0]
-    pairs = _to_pair_array(array)
-    if len(pairs) == 0: pairs = [[0, 0]]
-
-    bottom = pairs[0][1] if pairs[0][0] == 0 else 10
+def polarize(array, smallTop=False, base=10):  
+    pairs = correct(array)[0][1:]
+    bottom = pairs[0]
     top = 0
     height = 0
 
-    if len(pairs) <= 1 and pairs[0][0] == 0:
+    if len(pairs) <= 1:
         if smallTop:
             while bottom >= 10:
                 bottom = math.log(bottom,base)
                 top += 1
                 height = 1
     else:
-        elem = 1 if pairs[0][0] == 0 else 0
-        top = pairs[elem][1]
-        height = int(pairs[elem][0])
+        elem = 1
+        top = pairs[1]
+        height = 1
 
         while (bottom >= 10) or (elem < len(pairs)) or (smallTop and top >= 10):
             if bottom >= 10:
@@ -152,42 +138,25 @@ def polarize(array, smallTop=False, base=10):
                 else: bottom = 1
                 top += 1
             else:
-                if elem == len(pairs) - 1 and pairs[elem][0] == height and not (smallTop and top >= 10): break
+                if elem == len(pairs) - 1 and elem == height and not (smallTop and top >= 10): break
                 bottom = math.log(bottom,base) + top
                 height += 1
-                if elem < len(pairs) and height > pairs[elem][0]: elem += 1
+                if elem < len(pairs) and height > elem: elem += 1
                 if elem < len(pairs):
-                    if height == pairs[elem][0]:
-                        top = pairs[elem][1] + 1
+                    if height == elem: top = pairs[elem] + 1
                     elif bottom < 10:
-                        diff = pairs[elem][0] - height
+                        diff = elem - height
                         if diff < MAX_LOGP1_REPEATS:
                             for _ in range(diff):
                                 bottom = math.log(bottom,base) + 1
                         else: bottom = 1
-                        top = pairs[elem][1] + 1
+                        top = pairs[elem] + 1
                     else: top = 1
                 else: top = 1
     return {"bottom": bottom, "top": top, "height": height}
-
-def array_search(arr, height):
-    pairs = _to_pair_array(arr)
-    for h, v in pairs:
-        if h == height: return v
-        if h > height: break
-    return 0 if height > 0 else 10
-
-def set_to_zero(arr, height):
-    if isinstance(arr, list) and arr and isinstance(arr[0], (list, tuple)) and len(arr[0]) == 2:
-        for p in arr:
-            if p[0] == height:
-                p[1] = 0
-                return arr
-        return arr
-    a = correct(arr)[0]
-    idx = height + 1
-    if idx < len(a): a[idx] = 0
-    return a
+def set_to_zero(x, y):
+    x[y] = 0
+    return x
 
 def comma_format(num, precision=0):
     a = correct(num)[0]
@@ -676,8 +645,8 @@ def format(num, decimals=decimals, small=False):
     elif lt(num_correct, 1000): return regular_format(n, decimals)
     elif lt(num_correct, 1e9): return comma_format(n)
     elif lt(num_correct, [0, 10000000000, 3]):
-        bottom = array_search(n, 0)
-        rep = array_search(n, 1) - 1
+        bottom = n[1]
+        rep = n[2] - 1
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
@@ -688,31 +657,31 @@ def format(num, decimals=decimals, small=False):
     pol = polarize(n)
     if lt(num_correct, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + comma_format(pol['top'])
     elif lt(num_correct, [0, 10000000000, 8, 3]):
-        rep = array_search(n, 2)
+        rep = n[3]
         if rep >= 1:
-            n_arr = set_to_zero(n, 2)
+            n_arr = set_to_zero(n, 3)
             return ("F" * int(rep)) + format(n_arr, decimals)
-        n_val = array_search(n, 1) + 1
+        n_val = n[2] + 1
         if gte(num_correct, [0, 10, n_val]):
             n_val += 1
         return "F" + format(n_val, decimals)
     elif lt(num_correct, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + comma_format(pol['top'])
     elif lt(num_correct, [0, 10000000000, 8, 8, 3]):
-        rep = array_search(n, 3)
+        rep = n[4]
         if rep >= 1:
-            n_arr = set_to_zero(n, 3)
+            n_arr = set_to_zero(n, 4)
             return ("G" * int(rep)) + format(n_arr, decimals)
-        n_val = array_search(n, 2) + 1
+        n_val = n[3] + 1
         if gte(num_correct, [0, 10, 0, n_val]):
             n_val += 1
         return "G" + format(n_val, decimals)
     elif lt(num_correct, [0, 10000000000, 8, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "H" + comma_format(pol['top'])
     elif lt(num_correct, [0, 10000000000, 8, 8, 8, 3]):
-        rep = array_search(n, 4)
+        rep = n[5]
         if rep >= 1:
-            n_arr = set_to_zero(n, 4)
+            n_arr = set_to_zero(n, 5)
             return ("H" * int(rep)) + format(n_arr, decimals)
-        n_val = array_search(n, 3) + 1
+        n_val = n[4] + 1
         if gte(num_correct, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + format(n_val, decimals)
@@ -745,7 +714,7 @@ def hyper_e(x):
     arr = correct(x)
     sign = "-" if arr[0][0] == 1 else ""
     if arr[2] != 0: raise NotImplementedError("Hyper-e not implemented for numbers above 10{9007199254740991}10")
-    if arr[1] != 0: return sign + "E10000000000" + "#" + str(arr[0][-1]) + "##" + str(arr[1]-1)
+    if arr[1] != 0: return sign + "E10000000000" + "#" + str(arr[0][-1]) + "##" + str(arr[1])
     arr = arr[0]
     sign = "-" if arr[0] == 1 else ""
     if len(arr) > 3:
@@ -869,10 +838,9 @@ def suffix(num, small=False):
     elif lt(num_correct, 1000): return regular_format(n, decimals)
     elif lt(num_correct, 1e9): return _suffix(n)
     elif lt(num_correct, [0, max_suffix, 1]): return _suffix(n)
-       
     elif lt(num_correct, [0, max_suffix, 2]):
-        bottom = array_search(n, 0)
-        rep = array_search(n, 1) - 1
+        bottom = n[1]
+        rep = n[2] - 1
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
@@ -881,8 +849,8 @@ def suffix(num, small=False):
         p = precision2
         return regular_format([0, m], p) + "e" + _suffix(e)
     elif lt(num_correct, [0, max_suffix, 3]):
-        bottom = array_search(n, 0)
-        rep = array_search(n, 1) - 1
+        bottom = n[1]
+        rep = n[2] - 1
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
@@ -891,8 +859,8 @@ def suffix(num, small=False):
         p = precision2
         return "e" + regular_format([0, m], p) + "e" + _suffix(e)
     elif lt(num_correct, [0, 10000000000, 3]):
-        bottom = array_search(n, 0)
-        rep = array_search(n, 1) - 1
+        bottom = n[1]
+        rep = n[2] - 1
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
@@ -902,32 +870,32 @@ def suffix(num, small=False):
         return "ee" + regular_format([0, m], p) + "e" + _suffix(e)
     pol = polarize(n)
     if lt(num_correct, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + _suffix(pol['top'], 0)
-    elif lt(n, [0, 10000000000, 8, 3]):
-        rep = array_search(n, 2)
+    elif lt(num_correct, [0, 10000000000, 8, 3]):
+        rep = n[3]
         if rep >= 1:
-            n_arr = set_to_zero(n, 2)
+            n_arr = set_to_zero(n, 3)
             return ("F" * int(rep)) + suffix(n_arr, decimals)
-        n_val = array_search(n, 1) + 1
+        n_val = n[2] + 1
         if gte(num_correct, [0, 10, n_val]):
             n_val += 1
         return "F" + format(n_val, decimals)
     elif lt(num_correct, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + _suffix(pol['top'], 0)
     elif lt(num_correct, [0, 10000000000, 8, 8, 3]):
-        rep = array_search(n, 3)
+        rep = n[4]
         if rep >= 1:
-            n_arr = set_to_zero(n, 3)
+            n_arr = set_to_zero(n, 4)
             return ("G" * int(rep)) + suffix(n_arr, decimals)
-        n_val = array_search(n, 2) + 1
+        n_val = n[3] + 1
         if gte(num_correct, [0, 10, 0, n_val]):
             n_val += 1
         return "G" + suffix(n_val, decimals)
     elif lt(num_correct, [0, 10000000000, 8, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "H" + _suffix(pol['top'], 0)
     elif lt(num_correct, [0, 10000000000, 8, 8, 8, 3]):
-        rep = array_search(n, 4)
+        rep = n[5]
         if rep >= 1:
-            n_arr = set_to_zero(n, 4)
+            n_arr = set_to_zero(n, 5)
             return ("H" * int(rep)) + suffix(n_arr, decimals)
-        n_val = array_search(n, 3) + 1
+        n_val = n[4] + 1
         if gte(num_correct, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + suffix(n_val, decimals)
@@ -1046,26 +1014,13 @@ def fromstring(x, done=False):
 def arrow_format(x):
     x = correct(x)
     x0 = x[0]
-    if x[3] != 0:
-        if x[3] > MAX_SAFE_INT: return "10{{2}}" + str(float(x[3]))
-        if x[3] < 4: return "10{{1}}" * x[3] + arrow_format(x[:3] + [0])
-        pol = polarize(x0, True)
-        if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[3]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
-        if lt(x0, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return "10{{2}}" + comma_format(x[3]+1+_log10(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E), 16)
-        else:
-            if x[1] == 0: x[1] = len(x0)-1
-            nextToTopJ = x[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
-            if nextToTopJ >= 1e10: bottom = _log10(_log10(nextToTopJ))
-            else: bottom = _log10(nextToTopJ)
-            if nextToTopJ >= 1e10: top = 2
-            else: top = 1
-        return "10{{2}}" + comma_format(x[3]+2 + _log10(1+_log10(_log10(bottom)+top)), 16)
     if x[2] != 0:
         if x[2] > MAX_SAFE_INT: return "10{{1}}" + str(float(x[2]))
         if x[2] < 4: return "10{10}" * x[2] + arrow_format(x[:2] + [0])
+        x0 = x[0]
         pol = polarize(x0, True)
         if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[2]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
-        if lt(x0, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return "10{{2}}" + comma_format(x[2]+1+_log10(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E), 16)
+        if lt(x0, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return "10{{2}}" + comma_format(x[2]+1+_log10(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E))
         else:
             if x[1] == 0: x[1] = len(x0)-1
             nextToTopJ = x[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
@@ -1073,14 +1028,14 @@ def arrow_format(x):
             else: bottom = _log10(nextToTopJ)
             if nextToTopJ >= 1e10: top = 2
             else: top = 1
-        return "10{{1}}" + comma_format(x[2]+2 + _log10(1+_log10(_log10(bottom)+top)), 16)
+        return "10{{1}}" + comma_format(x[2]+2 + _log10(1+_log10(_log10(bottom)+top)))
     if x[1] != 0:
         pol = polarize(x0, True)
         val = _log10(pol['bottom']) + pol['top']
         j = x[1]
         if j > 1e9: j = comma_format(j, 6)
         else: j = comma_format(j)
-        return "10{" + str(j) + "}" + comma_format(val, 16)
+        return "10{" + str(j) + "}" + comma_format(val)
     else:
         if lt(x0, 1e9): return format(x0)
         pol = polarize(x0)
