@@ -711,17 +711,21 @@ def format(num, decimals=decimals, small=False):
         pol = polarize(n, True)
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
-def hyper_e(x):
+def hyper_e(x, use_sign=True):
     arr = correct(x)
-    sign = "-" if arr[0][0] == 1 else ""
-    if arr[2] != 0: raise NotImplementedError("Hyper-e not implemented for numbers above 10{9007199254740991}10")
-    if arr[1] != 0: return sign + "E10000000000" + "#" + str(arr[0][-1]) + "##" + str(arr[1])
+    sign = "-E" if arr[0][0] == 1 else "E"
+    if use_sign == False: sign = ""
+    if arr[1] == 0: arr[1] = len(arr[0])
+    # FOR NUMBERS ABOVE 10{2^53-1}10 MAY BE INACCURATE
+    if arr[2] >= 10: return sign + "10000000000" + "##" + str(arr[1]) + "###" + str(arr[2]-1)
+    if arr[2] != 0: return sign + "10##" * arr[2] + hyper_e(x[0], False)
+    if arr[1] >= 10: return sign + "10000000000" + "#" + str(arr[0][-1]) + "##" + str(arr[1]-1)
     arr = arr[0]
     sign = "-" if arr[0] == 1 else ""
     if len(arr) > 3:
         after = [v + 1 for v in arr[3:]]
         arr = arr[:3] + after
-    return sign + "E" + "#".join(map(str, arr[1:]))
+    return sign + "#".join(map(str, arr[1:]))
 def string(arr, top=True):
     arr = correct(arr)
     sign = "-" if arr[0][0] == 1 and top else ""
