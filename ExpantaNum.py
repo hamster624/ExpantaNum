@@ -542,13 +542,13 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
         while len(j) <= r: j.append(0)
         j[r] += 1
         return j
+    if r == 3 and gt(t, [0, MAX_SAFE_INT, 2]): return t[0] + [1]
     if s is None:
         arr_n = correct(n)[0]
         target_len = r + 2
         arr_res = arr_n + [0] * (target_len - len(arr_n))
         arr_res[-1] += 1
         return correct(arr_res)
-
 
     thr_r = [0, MAX_SAFE_INT, 1]
     if gte(t, thr_r) or (tofloat2(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
