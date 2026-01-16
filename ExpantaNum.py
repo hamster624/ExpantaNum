@@ -542,13 +542,13 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
         while len(j) <= r: j.append(0)
         j[r] += 1
         return j
-    if r == 3 and gt(t, [0, MAX_SAFE_INT, 2]): return t[0] + [1]
     if s is None:
         arr_n = correct(n)[0]
         target_len = r + 2
         arr_res = arr_n + [0] * (target_len - len(arr_n))
         arr_res[-1] += 1
         return correct(arr_res)
+
 
     thr_r = [0, MAX_SAFE_INT, 1]
     if gte(t, thr_r) or (tofloat2(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
@@ -676,7 +676,7 @@ def format(num, decimals=decimals, small=False):
     elif lt(num_correct, [0, 10000000000, 8, 3]):
         rep = array_search(n, 3)
         if rep >= 1:
-            n_arr = set_to_zero(n, 2)
+            n_arr = set_to_zero(n, 3)
             return ("F" * int(rep)) + format(n_arr, decimals)
         n_val = array_search(n, 2) + 1
         if gte(num_correct, [0, 10, n_val]):
@@ -686,7 +686,7 @@ def format(num, decimals=decimals, small=False):
     elif lt(num_correct, [0, 10000000000, 8, 8, 3]):
         rep = array_search(n, 4)
         if rep >= 1:
-            n_arr = set_to_zero(n, 3)
+            n_arr = set_to_zero(n, 4)
             return ("G" * int(rep)) + format(n_arr, decimals)
         n_val = array_search(n, 3) + 1
         if gte(num_correct, [0, 10, 0, n_val]):
@@ -696,7 +696,7 @@ def format(num, decimals=decimals, small=False):
     elif lt(num_correct, [0, 10000000000, 8, 8, 8, 3]):
         rep = array_search(n, 5)
         if rep >= 1:
-            n_arr = set_to_zero(n, 4)
+            n_arr = set_to_zero(n, 5)
             return ("H" * int(rep)) + format(n_arr, decimals)
         n_val = array_search(n, 4) + 1
         if gte(num_correct, [0, 10, 0, 0, n_val]):
@@ -736,7 +736,6 @@ def hyper_e(x, use_sign=True):
     if arr[2] != 0: return sign + "10##" + str(len(arr[0])-1) + "#" + str(arr[2]+1)
     if arr[1] >= 10: return sign + "10000000000" + "#" + str(arr[0][-1]) + "##" + str(arr[1]-1)
     arr = arr[0]
-    sign = "-" if arr[0] == 1 else ""
     if len(arr) > 3:
         after = [v + 1 for v in arr[3:]]
         arr = arr[:3] + after
