@@ -20,7 +20,7 @@ MultOnes = [
 ]
 #--End of editable things--
 MAX_SAFE_INT = 2**53 - 1
-MAX_LOGP1_REPEATS = 480
+MAX_LOGP1_REPEATS = 48
 LOG5E = 0.6213349345596118
 _log10 = math.log10
 precise_arrow = False # Would not recommend turning this to True
@@ -306,6 +306,7 @@ def hyper_log(x, k):
     if k == 1: return log(x)
     arr_len = len(x)
     pol = polarize(x, True)
+    print(x)
     start = _log10(pol['bottom']) + pol['top']
     for i in range(k-pol["height"]-1): start = _log10(start)+1
     if arr_len == (k + 1): return correct(tofloat(hyper_log(x[:k], k)) + x[k])
@@ -435,7 +436,6 @@ def gamma(x):
     if x[0][0] == 1: raise ValueError("Can't factorial a negative")
     if x[1] != 0 or x[2] != 0: return x
     x0 = x[0]
-    if gt(x0, [0, MAX_SAFE_INT, 2]): return x
     if gt(x0, [0, 15.954589770191003, 1]): return exp(x)
     if gte(x0, MAX_SAFE_INT): return exp(multiply(x0, subtract(ln(x0), 1)))
     n = tofloat2(x0)
@@ -453,7 +453,7 @@ def gamma(x):
     l += 1 / (1260 * np)
     np *= n2
     l -= 1 / (1680 * np)
-    return exp(correct(l))
+    return exp(l)
 
 def tetration(a, r, do=False):
     a = correct(a)
@@ -1061,6 +1061,10 @@ def arrow_format(x):
         arrow = pol['height']+1
         if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
         return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
+def ssqrt(x):
+    if x[1] != 0 or x[2] != 0: return x
+    if x[0][0] == 1: raise ValueError("Can't super-sqrt a negative")
+    return exp(lambertw(ln(x)))
 def pentation(a,b): return arrow(a,3,b)
 def hexation(a,b): return arrow(a,4,b)
 def heptation(a,b): return arrow(a,5,b)
