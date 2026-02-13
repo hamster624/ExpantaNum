@@ -462,7 +462,7 @@ def tetration(a, r, do=False):
     if r[1] != 0 or r[2] != 0: return maximum(a,r)
     a = a[0]
     r = r[0]
-    if r[0][0] == 1: raise ValueError("Tetration height cant be a negative")
+    if r[0] == 1: raise ValueError("Tetration height cant be a negative")
 
     if eq(a, [[0, 0], 0, 0]):
         if eq(r, [[0, 0], 0, 0]): raise ValueError("0^^0 is undefined")
