@@ -1,22 +1,22 @@
 import math
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
-max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+max_suffix = 1e308 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
 MultOnes = [
-    "", "Mi", "Mc", "Na", "Pi", "Fm", "At", "Zp", "Yc", "Xo", "Ve", "Me", "Due", 
-    "Tre", "Te", "Pt", "He", "Hp", "Oct", "En", "Ic", "Mei", "Dui", "Tri", "Teti", 
-    "Pti", "Hei", "Hp", "Oci", "Eni", "Tra", "TeC", "MTc", "DTc", "TrTc", "TeTc", 
-    "PeTc", "HTc", "HpT", "OcT", "EnT", "TetC", "MTetc", "DTetc", "TrTetc", "TeTetc", 
-    "PeTetc", "HTetc", "HpTetc", "OcTetc", "EnTetc", "PcT", "MPcT", "DPcT", "TPCt", 
-    "TePCt", "PePCt", "HePCt", "HpPct", "OcPct", "EnPct", "HCt", "MHcT", "DHcT", 
-    "THCt", "TeHCt", "PeHCt", "HeHCt", "HpHct", "OcHct", "EnHct", "HpCt", "MHpcT", 
-    "DHpcT", "THpCt", "TeHpCt", "PeHpCt", "HeHpCt", "HpHpct", "OcHpct", "EnHpct", 
-    "OCt", "MOcT", "DOcT", "TOCt", "TeOCt", "PeOCt", "HeOCt", "HpOct", "OcOct", 
-    "EnOct", "Ent", "MEnT", "DEnT", "TEnt", "TeEnt", "PeEnt", "HeEnt", "HpEnt", 
-    "OcEnt", "EnEnt", "Hect", "MeHect"
+    "", "Mi-", "Mc-", "Na-", "Pi-", "Fm-", "At-", "Zp-", "Yc-", "Xo-", "Ve-", "Me-", "Due-",
+    "Tre-", "Te-", "Pt-", "He-", "Hp-", "Oct-", "En-", "Ic-", "Mei-", "Dui-", "Tri-", "Teti-",
+    "Pti-", "Hei-", "Hp-", "Oci-", "Eni-", "Tra-", "TeC-", "MTc-", "DTc-", "TrTc-", "TeTc-",
+    "PeTc-", "HTc-", "HpT-", "OcT-", "EnT-", "TetC-", "MTetc-", "DTetc-", "TrTetc-", "TeTetc-",
+    "PeTetc-", "HTetc-", "HpTetc-", "OcTetc-", "EnTetc-", "PcT-", "MPcT-", "DPcT-", "TPCt-",
+    "TePCt-", "PePCt-", "HePCt-", "HpPct-", "OcPct-", "EnPct-", "HCt-", "MHcT-", "DHcT-",
+    "THCt-", "TeHCt-", "PeHCt-", "HeHCt-", "HpHct-", "OcHct-", "EnHct-", "HpCt-", "MHpcT-",
+    "DHpcT-", "THpCt-", "TeHpCt-", "PeHpCt-", "HeHpCt-", "HpHpct-", "OcHpct-", "EnHpct-",
+    "OCt-", "MOcT-", "DOcT-", "TOCt-", "TeOCt-", "PeOCt-", "HeOCt-", "HpOct-", "OcOct-",
+    "EnOct-", "Ent-", "MEnT-", "DEnT-", "TEnt-", "TeEnt-", "PeEnt-", "HeEnt-", "HpEnt-",
+    "OcEnt-", "EnEnt-", "Hect-", "MeHect-"
 ]
 #--End of editable things--
 MAX_SAFE_INT = 2**53 - 1
@@ -27,11 +27,20 @@ precise_arrow = False # Would not recommend turning this to True
 arrow_precision = 44 # Would nto recommend changing this
 grahams_number = [[0, 3638334640023.7783, 7625597484984, 0, 1], 0, 63] # This variable is unused and is only here just to show how much the grahams number is
 def correct(x):
+    is_inf = 0
+    try: is_inf = math.isinf(x)
+    except: pass
+    if is_inf: raise OverflowError("Infinity")
     if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
 
     if isinstance(x, str):
-        try: x =correct(float(x))
-        except: pass
+        if ('e' in x) and x.count("e") == 1:
+            before, after = x.split("e")
+            if before == "": before = 1
+            start_array = [0, 0, 0]
+            start_array[1] = math.log10(float(before)) + float(after)
+            if start_array[2] == 0: start_array[2] = 1
+            return correct(start_array)
         s = x.strip()
         s = s.replace("1e", "e")
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
@@ -105,7 +114,7 @@ def correct(x):
             x[2] += 1
         if x[2] != 0 and len(arr) == 2: raise ValueError("If layer is more than 0 and array is less than 2^53-1 its undefined")
         return [arr] + x[1:]
-    raise TypeError("Unsupported type for correct")
+    raise TypeError("Unsupported type for correct. Input:" + str(x))
 def polarize(array, smallTop=False):
     pairs = correct(array)[0][1:]
     bottom = pairs[0]
@@ -357,18 +366,17 @@ def add(a, b):
 
 def subtract(a,b):
     a, b = correct(a), correct(b)
+    if tofloat2(a) != None and tofloat2(b) != None: return correct(tofloat2(a)-tofloat2(b))
     if eq(a,b) and a[0] == b[0]: return [[0, 0], 0, 0]
     if gt(a, [[0, MAX_SAFE_INT, 1], 0, 0]) or gt(b, [[0, MAX_SAFE_INT, 1], 0, 0]):
         if gt(b,a): return neg(b)
         if gt(a,b): return a
     a = a[0]
     b = b[0]
-    if eq(a,b): return neg(add(abs_val(a),abs_val(b)))
+    if lt(a,b): return neg(subtract(b, a))
     if a[0] == 1 and b[0] == 1: return neg(subtract(abs_val(b), abs_val(a)))
     if a[0] == 1 and b[0] == 0: return neg(addlayer(tofloat(log(abs_val(a))) + tofloat(log(1 + tofloat(addlayer(tofloat(log(b)) - tofloat(log(abs_val(a)))))))))
     if a[0] == 0 and b[0] == 1: return add(a, abs_val(b))
-    if lt(a,b):
-        if a[0] == 0 and b[0] == 0: return neg(addlayer(tofloat(log(a)) + tofloat(log(abs_val(1 - tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))))
     if a[0] == 0 and b[0] == 0: return addlayer(tofloat(log(a)) + tofloat(log(1 - tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))
 
 def multiply(a, b):
@@ -624,7 +632,7 @@ def expansion(a, b):
     if eq(a, 1): return [[0, 1], 0, 0]
     if eq(a, 2): return [[0, 4], 0, 0]
     if eq(a, 0): return [[0, 0], 0, 0]
-    if float_b == None: return [[0, 10000000000, 1]] + [0] + [add(a[2], b)]
+    if float_b == None: raise OverflowError("Expansion height can not go over 2^1024-1 (1e308)")
     b=float_b
     if _is_int_like(b) != True: raise ValueError("2nd expansion number must be an integer")
     b = int(b)
@@ -657,6 +665,7 @@ def format(num, decimals=decimals, small=False):
     n = num_correct[0]
     if len(n) == 2 and abs(n[1]) < 1e-308 and num_correct[1] != 0 and num_correct[2] != 0: return f"{0:.{decimals}f}"
     if n[0] == 1: return "-" + format(neg(num_correct), decimals)
+    if eq(num_correct, 0): return "0"
     if lt(num_correct, 0.0001):
         inv = 1/tofloat(n)
         return "1/" + format(inv, decimals)
@@ -833,7 +842,7 @@ def _suffix(x, suffix_decimals=decimals):
 
     if SNumber < 1000:
         suffixpart(SNumber)
-        return format_with_suffix(base_num, "") + txt
+        return format_with_suffix(base_num, "") + txt + "-"
 
     for i in range(len(MultOnes)-1, -1, -1):
         power_val = 10 ** (i * 3)
@@ -842,7 +851,8 @@ def _suffix(x, suffix_decimals=decimals):
             suffixpart2(part_val - 1)
             txt += MultOnes[i]
             SNumber = SNumber % power_val
-    return format_with_suffix(base_num, "") + txt
+    return_thingy = format_with_suffix(base_num, "") + txt
+    return return_thingy[:-1] if return_thingy.endswith('-') else return_thingy
 
 def suffix(num, small=False):
     precision2 = max(5, decimals)
