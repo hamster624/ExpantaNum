@@ -615,7 +615,7 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
         while amount < r and s <= 2 and n_float !=None and s_t != None:
             amount += 1
             s = s_t ** (s - 1)
-        result[1] = r-amount
+        result[1] = r-amount-1
         result[0] = _arrow(base, arro, n)
         return result
     r_float = tofloat2(q)
