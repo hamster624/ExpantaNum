@@ -1074,6 +1074,7 @@ def arrow_format(x):
         if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
         return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
 def ssqrt(x):
+    x = correct(x)
     if x[1] != 0 or x[2] != 0: return x
     if x[0][0] == 1: raise ValueError("Can't super-sqrt a negative")
     return exp(lambertw(ln(x)))
