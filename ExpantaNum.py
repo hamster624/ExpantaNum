@@ -841,9 +841,9 @@ def _suffix(x, suffix_decimals=decimals):
         txt += SecondOnes[Tens]
         txt += ThirdOnes[Hundreds]
 
-    def suffixpart2(n):
+    def suffixpart2(n, i):
         nonlocal txt
-        if n > 0: n += 1
+        if n > 0 or i == 0: n += 1
         if n > 1000: n = n % 1000
         Hundreds = int(n / 100)
         n = n % 100
@@ -855,13 +855,13 @@ def _suffix(x, suffix_decimals=decimals):
 
     if SNumber < 1000:
         suffixpart(SNumber)
-        return format_with_suffix(base_num, "") + txt + "-"
+        return format_with_suffix(base_num, "") + txt
 
     for i in range(len(MultOnes)-1, -1, -1):
         power_val = 10 ** (i * 3)
         if SNumber >= power_val:
             part_val = int(SNumber / power_val)
-            suffixpart2(part_val - 1)
+            suffixpart2(part_val - 1, i)
             txt += MultOnes[i]
             SNumber = SNumber % power_val
     return_thingy = format_with_suffix(base_num, "") + txt
