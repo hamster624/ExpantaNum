@@ -22,6 +22,8 @@ MultOnes = [
 MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
 LOG5E = 0.6213349345596118
+LOG10_PHI = 0.20898764024997873
+LOG10_SQRT5 = 0.3494850021680094
 _log10 = math.log10
 precise_arrow = False # Would not recommend turning this to True
 arrow_precision = 44 # Would nto recommend changing this
@@ -45,6 +47,8 @@ def correct(x):
         s = s.replace("1e", "e")
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
         if any(c in "}^)e" for c in s): return fromstring(s)
+        try: return float(x)
+        except: pass
         raise NotImplementedError("Can't convert the format you input")
         return fromformat(s)
 
@@ -276,6 +280,7 @@ def lambertw(x):
 def log(x):
     arr = correct(x)
     if arr[0][0] == 1: raise ValueError("Can't log a negative")
+    if eq(x, 0): return [[0, 0], 0, 0]
     if arr[1] != 0 or arr[2] != 0: return arr
     arr = arr[0]
     len_arr = len(arr)
@@ -387,7 +392,9 @@ def multiply(a, b):
     a = a[0]
     b = b[0]
     result_sign = a[0] ^ b[0]
-    if gt(a, [[0, 1000, 2], 0, 0]) or gt(b, [[0, 1000, 2], 0, 0]): return maximum(a,b)
+    if gt(a, [[0, 1000, 2], 0, 0]) or gt(b, [[0, 1000, 2], 0, 0]):
+        if a[2] != b[2]: return maximum(a,b)
+        return addlayer(add(log(a), log(b)))
     if len(a) == 2 and len(b) == 2:
         val = (a[1] if a[0] == 0 else -a[1]) * (b[1] if b[0] == 0 else -b[1])
         return correct([0 if val >= 0 else 1, abs(val)])
@@ -555,14 +562,13 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
         target_len = r + 2
         arr_res = arr_n + [0] * (target_len - len(arr_n))
         arr_res[-1] += 1
-        return correct(arr_res)
-
+        return correct(arr_res)[0]
 
     thr_r = [0, MAX_SAFE_INT, 1]
     if gte(t, thr_r) or (tofloat2(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
     u = int(s)
     frac = s - u
-    if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1, False, done=True)
+    if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1, True, done=True)
     else:
         i = t
         if u > 0: u -= 1
@@ -583,7 +589,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
                 i[idx] = i[idx] + u
             return i
     except Exception: pass
-    return i
+    return correct(i)
 
 def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     q = correct(arrows)
@@ -617,7 +623,7 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
             s = s_t ** (s - 1)
         result[1] = r-amount-1
         result[0] = _arrow(base, arro, n)
-        return result
+        return correct(result)
     r_float = tofloat2(q)
     if r_float != None: 
         if _is_int_like(r_float) == False: raise("Arrows must be an integer")
@@ -655,6 +661,14 @@ def root(a,b):
     if a[0][0] == 1: raise ValueError("Cant root a negative")
     if gt(b,[[0, 0], 0, 0]) and lt(b,[[0, 1], 0, 0]): return power(a,divide(1,b))
     if eq(b, [[0, 0], 0, 0]): raise ValueError("Root of 0 is undefined")
+    a = a[0]
+    float_b = tofloat(b)
+    if len(a) > 3: return addlayer(divide(log(a),b))
+    if len(a) == 3 and float_b != None:
+        if a[2] == 1: return correct([0, a[1]/float_b, 1])
+        if a[2] == 2: return correct([0, a[1]-1+_log10(10/float_b), 2])
+        return addlayer(divide(log(a),b))
+    if float_b != None: return correct([0, a[1]**(1/float_b)])
     return addlayer(divide(log(a),b))
 def exp(x): return power(2.718281828459045, x)
 def format(num, decimals=decimals, small=False):
@@ -754,7 +768,6 @@ def hyper_e(x, use_sign=True):
 def string(arr, top=True):
     arr = correct(arr)
     sign = "-" if arr[0][0] == 1 and top else ""
-    if gte(arr[2], MAX_SAFE_INT): return "K" + string(arr[2])
     if arr[2] != 0:
         if arr[2] >=5: return "J^" + str(int(arr[2])) + " " + string(arr[:2] + [0])
         return "J" * arr[2] + string(arr[:2] + [0])
@@ -869,92 +882,7 @@ def suffix(num, small=False):
     elif lt(num_correct, 1000): return regular_format(n, decimals)
     elif lt(num_correct, MAX_SAFE_INT): return _suffix(n)
     elif lt(num_correct, [0, max_suffix, 1]): return _suffix(n)
-    elif lt(num_correct, [0, max_suffix, 2]):
-        bottom = n[1]
-        rep = n[2] - 1
-        if bottom >= 1e9:
-            bottom = _log10(bottom)
-            rep += 1
-        m = 10 ** (bottom - int(bottom))
-        e = int(bottom)
-        p = precision2
-        return regular_format([0, m], p) + "e" + _suffix(e)
-    elif lt(num_correct, [0, max_suffix, 3]):
-        bottom = n[1]
-        rep = n[2] - 1
-        if bottom >= 1e9:
-            bottom = _log10(bottom)
-            rep += 1
-        m = 10 ** (bottom - int(bottom))
-        e = int(bottom)
-        p = precision2
-        return "e" + regular_format([0, m], p) + "e" + _suffix(e)
-    elif lt(num_correct, [0, 10000000000, 3]):
-        bottom = n[1]
-        rep = n[2] - 1
-        if bottom >= 1e9:
-            bottom = _log10(bottom)
-            rep += 1
-        m = 10 ** (bottom - int(bottom))
-        e = int(bottom)
-        p = precision2
-        return "ee" + regular_format([0, m], p) + "e" + _suffix(e)
-    pol = polarize(n)
-    if lt(num_correct, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + _suffix(pol['top'], 0)
-    elif lt(num_correct, [0, 10000000000, 8, 3]):
-        rep = n[3]
-        if rep >= 1:
-            n_arr = set_to_zero(n, 3)
-            return ("F" * int(rep)) + suffix(n_arr, decimals)
-        n_val = n[2] + 1
-        if gte(num_correct, [0, 10, n_val]):
-            n_val += 1
-        return "F" + suffix(n_val, decimals)
-    elif lt(num_correct, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + _suffix(pol['top'], 0)
-    elif lt(num_correct, [0, 10000000000, 8, 8, 3]):
-        rep = n[4]
-        if rep >= 1:
-            n_arr = set_to_zero(n, 4)
-            return ("G" * int(rep)) + suffix(n_arr, decimals)
-        n_val = n[3] + 1
-        if gte(num_correct, [0, 10, 0, n_val]):
-            n_val += 1
-        return "G" + suffix(n_val, decimals)
-    elif lt(num_correct, [0, 10000000000, 8, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "H" + _suffix(pol['top'], 0)
-    elif lt(num_correct, [0, 10000000000, 8, 8, 8, 3]):
-        rep = n[5]
-        if rep >= 1:
-            n_arr = set_to_zero(n, 5)
-            return ("H" * int(rep)) + suffix(n_arr, decimals)
-        n_val = n[4] + 1
-        if gte(num_correct, [0, 10, 0, 0, n_val]):
-            n_val += 1
-        return "H" + suffix(n_val, decimals)
-    elif gte(num_correct[2], MAX_SAFE_INT): return "K" + suffix(num_correct[2])
-    elif num_correct[2] != 0 and num_correct[2] < 4: return "J" * num_correct[2] + suffix(num_correct[:2] + [0])
-    elif num_correct[2] != 0 and num_correct[2] >= 4:
-        pol = polarize(n, True)
-        if lt(n, [0, 10000000000, 8]): return suffix(1+_log10(_log10(pol["bottom"])+pol["top"]), precision4) + "K" + suffix(num_correct[2]+1)
-        if lt(n, [0, 10000000000, 8, 8, 8, 8, 8, 8, 8, 8, 8]): return suffix(pol["height"] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E, precision4) + "K" + suffix(num_correct[2]+1)
-        else:
-            if num_correct[1] == 0: num_correct[1] = len(n)-1
-            nextToTopJ = num_correct[1] + math.log((_log10(pol["bottom"]) + pol["top"]) / 2) * LOG5E
-            if nextToTopJ >= 1e10: bottom = _log10(_log10(nextToTopJ))
-            else: bottom = _log10(nextToTopJ)
-            if nextToTopJ >= 1e10: top = 2
-            else: top = 1
-        return suffix(1+ _log10(_log10(bottom)+top),precision4) + "K" + suffix(num_correct[2]+2)
-    elif num_correct[1] != 0:
-        pol = polarize(n, True)
-        val = _log10(pol['bottom']) + pol['top']
-        j = num_correct[1]
-        if j > 1e9: j = suffix(j, 6)
-        else: j = suffix(j)
-        return regular_format([0, val], precision4) + "J" + j
-    else:
-        pol = polarize(n, True)
-        val = _log10(pol['bottom']) + pol['top']
-        return regular_format([0, val], precision4) + "J" + suffix(pol['height'])
+    return format(num)
 def from_hyper_e(x):
     if "##" in x: raise NotImplementedError("If you are trying to convert a hyper_e and it has ## in it, then it's not implemented yet.")
     if not x.lstrip('-').startswith('E'): raise ValueError("Not a hyper_e string")
@@ -972,8 +900,6 @@ def count_repeating(s, target=None):
     return count
 # Sniffed breaking bad money making stuff a bit too much to code and in the result got this code. Oh and spent ~3h for this trash
 def fromstring(x, done=False):
-    if x.startswith("K"):
-        return [[0, 10000000000, 1]] + [0, fromstring(x.removeprefix("K"))]
     if x.startswith("J^"):
         x = x.strip("J^")
         return fromstring(x.split(" ", 1)[1])[:2] + [float(x.split(" ", 1)[0])]
@@ -1047,7 +973,7 @@ def arrow_format(x):
     x0 = x[0]
     if x[2] != 0:
         if x[2] > MAX_SAFE_INT: return "10{{1}}" + str(float(x[2]))
-        if x[2] < 4: return "10{10}" * x[2] + arrow_format(x[:2] + [0])
+        if x[2] < 4: return "10{" * x[2] + arrow_format(x[:2] + [0]) + "}10" * x[2]
         x0 = x[0]
         pol = polarize(x0, True)
         if lt(x0, [0, 10000000000, 8]): return "10{{2}}" + format(x[2]+1+_log10(1+_log10(_log10(pol["bottom"])+pol["top"])))
@@ -1078,6 +1004,20 @@ def ssqrt(x):
     if x[1] != 0 or x[2] != 0: return x
     if x[0][0] == 1: raise ValueError("Can't super-sqrt a negative")
     return exp(lambertw(ln(x)))
+F_SMALL = [0, 1]
+for i in range(2, 101): F_SMALL.append(F_SMALL[i-1] + F_SMALL[i-2])
+
+def fib(n):
+    n = correct(n)
+    if n[0][0] == 1: raise ValueError("Cant fibonacci a negative number")
+    if (not _is_int_like(n)) and lte(n, 100): raise ValueError("Cant fibonacci a non-integer number")
+    if lte(n,100): result = F_SMALL[n]
+    else:
+        x = sub(mul(n, LOG10_PHI), LOG10_SQRT5)
+        x_floor = floor(x)
+        frac = sub(x, x_floor)
+        result = mul(addlayer(frac), addlayer(x_floor))
+    return result
 def pentation(a,b): return arrow(a,3,b)
 def hexation(a,b): return arrow(a,4,b)
 def heptation(a,b): return arrow(a,5,b)
